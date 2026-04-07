@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'chore/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Skill Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check every skill has a SKILL.md
+        run: |
+          exit_code=0
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            if [ ! -f "${dir}SKILL.md" ]; then
+              echo "::error::Skill '${skill_name}' is missing SKILL.md"
+              exit_code=1
+            fi
+          done
+          [ "$exit_code" -eq 0 ] && echo "All skills have a SKILL.md entry point."
+          exit $exit_code
+
+      - name: Check SKILL.md files have frontmatter
+        run: |
+          exit_code=0
+          for skill_md in skills/*/SKILL.md; do
+            skill_name=$(basename "$(dirname "$skill_md")")
+            if ! head -1 "$skill_md" | grep -q '^---$'; then
+              echo "::error::${skill_name}/SKILL.md is missing YAML frontmatter (must start with ---)"
+              exit_code=1
+            fi
+          done
+          [ "$exit_code" -eq 0 ] && echo "All SKILL.md files have frontmatter."
+          exit $exit_code
+
+      - name: Check skill directories use kebab-case naming
+        run: |
+          exit_code=0
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            if ! echo "$skill_name" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+              echo "::error::Skill directory '${skill_name}' does not follow kebab-case naming"
+              exit_code=1
+            fi
+          done
+          [ "$exit_code" -eq 0 ] && echo "All skill directories follow kebab-case naming."
+          exit $exit_code
+
+      - name: Validate skills.json is in sync with skills/
+        run: |
+          if [ ! -f skills.json ]; then
+            echo "::error::skills.json manifest is missing"
+            exit 1
+          fi
+
+          exit_code=0
+
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            if ! python3 -c "
+          import json, sys
+          with open('skills.json') as f:
+              data = json.load(f)
+          names = [s['name'] for s in data['skills']]
+          sys.exit(0 if '${skill_name}' in names else 1)
+          "; then
+              echo "::error::Skill '${skill_name}' exists in skills/ but is not listed in skills.json"
+              exit_code=1
+            fi
+          done
+
+          python3 -c "
+          import json, os, sys
+          with open('skills.json') as f:
+              data = json.load(f)
+          ok = True
+          for skill in data['skills']:
+              if not os.path.isdir(skill['path']):
+                  print(f\"::error::skills.json references '{skill['name']}' at '{skill['path']}' but directory does not exist\")
+                  ok = False
+              elif not os.path.isfile(os.path.join(skill['path'], skill['entry'])):
+                  print(f\"::error::skills.json references entry '{skill['entry']}' for '{skill['name']}' but file does not exist\")
+                  ok = False
+          sys.exit(0 if ok else 1)
+          " || exit_code=1
+
+          [ "$exit_code" -eq 0 ] && echo "skills.json is in sync with skills/ directory."
+          exit $exit_code
+
+  open-pr:
+    name: Open Pull Request
+    needs: validate
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Determine PR metadata from branch name
+        id: meta
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          prefix="${branch%%/*}"
+          suffix="${branch#*/}"
+
+          case "$prefix" in
+            feat)  label="new-skill" ;;
+            fix)   label="skill-update" ;;
+            chore) label="governance" ;;
+            *)     label="" ;;
+          esac
+
+          title=$(echo "$suffix" | tr '-' ' ' | python3 -c "import sys; print(sys.stdin.read().strip().capitalize())")
+
+          echo "label=$label"   >> "$GITHUB_OUTPUT"
+          echo "title=$title"   >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR if none exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --head "${{ steps.meta.outputs.branch }}" --state open --json number --jq 'length')
+
+          if [ "$existing" -gt 0 ]; then
+            echo "PR already exists for ${{ steps.meta.outputs.branch }}, skipping."
+            exit 0
+          fi
+
+          label_flag=""
+          if [ -n "${{ steps.meta.outputs.label }}" ]; then
+            label_flag="--label ${{ steps.meta.outputs.label }}"
+          fi
+
+          gh pr create \
+            --title "${{ steps.meta.outputs.title }}" \
+            --body "Automated PR for branch \`${{ steps.meta.outputs.branch }}\`." \
+            --base main \
+            --head "${{ steps.meta.outputs.branch }}" \
+            --draft \
+            $label_flag
