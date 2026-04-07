@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "skipDangerousModePermissionPrompt": true
+}
