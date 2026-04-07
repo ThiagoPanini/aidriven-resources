@@ -1,4 +1,6 @@
 **settings.**
+.claude/
+.copilot/
 
 # OS files
 .DS_Store
