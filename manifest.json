@@ -3,12 +3,13 @@
   "name": "aidriven-resources",
   "description": "AI resources and artifacts for aidriven project",
   "version": "0.1.0",
+  "schema_version": 1,
   "updated_at": "2026-04-06",
   "skills": [
     {
       "name": "github-actions-workflow-setup",
       "description": "Create, update, or modernize GitHub Actions workflows for any repository.",
-      "path": "skills/github-actions-workflow-setup",
+      "path_in_repo": "skills/github-actions-workflow-setup",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     },
@@ -22,21 +23,21 @@
     {
       "name": "python-project-setup",
       "description": "Configure modern Python development tooling for any Python project.",
-      "path": "skills/python-project-setup",
+      "path_in_repo": "skills/python-project-setup",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     },
     {
       "name": "python-unit-tests",
       "description": "Generate high-quality Python unit tests using pytest with the Given/When/Then pattern.",
-      "path": "skills/python-unit-tests",
+      "path_in_repo": "skills/python-unit-tests",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     },
     {
       "name": "skill-creator",
       "description": "Create new skills, modify and improve existing skills, and measure skill performance.",
-      "path": "skills/skill-creator",
+      "path_in_repo": "skills/skill-creator",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     }
