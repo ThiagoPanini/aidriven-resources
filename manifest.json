@@ -16,7 +16,7 @@
     {
       "name": "prompt-engineering",
       "description": "Turn vague, weak, or incomplete requests into clear, robust, reusable prompts.",
-      "path": "skills/prompt-engineering",
+      "path_in_repo": "skills/prompt-engineering",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     },
