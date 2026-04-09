@@ -72,34 +72,15 @@ jobs:
 
           for dir in skills/*/; do
             skill_name=$(basename "$dir")
-            if ! python3 -c "
-          import json, sys
-            with open('manifest.json') as f:
-              data = json.load(f)
-          names = [s['name'] for s in data['skills']]
-          sys.exit(0 if '${skill_name}' in names else 1)
-          "; then
+            if ! python3 -c "import json,sys; data=json.load(open('manifest.json', encoding='utf-8')); names=[s['name'] for s in data['skills']]; sys.exit(0 if sys.argv[1] in names else 1)" "$skill_name"; then
               echo "::error::Skill '${skill_name}' exists in skills/ but is not listed in manifest.json"
               exit_code=1
             fi
           done
 
-          python3 -c "
-          import json, os, sys
-            with open('manifest.json') as f:
-              data = json.load(f)
-          ok = True
-          for skill in data['skills']:
-              if not os.path.isdir(skill['path']):
-                print(f\"::error::manifest.json references '{skill['name']}' at '{skill['path']}' but directory does not exist\")
-                  ok = False
-              elif not os.path.isfile(os.path.join(skill['path'], skill['entry'])):
-                print(f\"::error::manifest.json references entry '{skill['entry']}' for '{skill['name']}' but file does not exist\")
-                  ok = False
-          sys.exit(0 if ok else 1)
-          " || exit_code=1
+          python3 -c "import json,os,sys; data=json.load(open('manifest.json', encoding='utf-8')); errors=[]; [errors.append(f\"::error::manifest.json references '{s['name']}' at '{s['path']}' but directory does not exist\") for s in data['skills'] if not os.path.isdir(s['path'])]; [errors.append(f\"::error::manifest.json references entry '{s['entry']}' for '{s['name']}' but file does not exist\") for s in data['skills'] if os.path.isdir(s['path']) and not os.path.isfile(os.path.join(s['path'], s['entry']))]; [print(e) for e in errors]; sys.exit(1 if errors else 0)" || exit_code=1
 
-            [ "$exit_code" -eq 0 ] && echo "manifest.json is in sync with skills/ directory."
+          [ "$exit_code" -eq 0 ] && echo "manifest.json is in sync with skills/ directory."
           exit $exit_code
 
   open-pr:
