@@ -20,12 +20,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate skills.json version matches tag
+      - name: Validate manifest.json version matches tag
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
-          manifest_version=$(python3 -c "import json; print(json.load(open('skills.json'))['version'])")
+          manifest_version=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
           if [ "$tag" != "$manifest_version" ]; then
-            echo "::error::Tag v${tag} does not match skills.json version ${manifest_version}"
+            echo "::error::Tag v${tag} does not match manifest.json version ${manifest_version}"
             exit 1
           fi
           echo "Tag v${tag} matches manifest version."
