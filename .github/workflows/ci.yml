@@ -78,7 +78,7 @@ jobs:
             fi
           done
 
-          python3 -c "import json,os,sys; data=json.load(open('manifest.json', encoding='utf-8')); errors=[]; [errors.append(f\"::error::manifest.json references '{s['name']}' at '{s['path']}' but directory does not exist\") for s in data['skills'] if not os.path.isdir(s['path'])]; [errors.append(f\"::error::manifest.json references entry '{s['entry']}' for '{s['name']}' but file does not exist\") for s in data['skills'] if os.path.isdir(s['path']) and not os.path.isfile(os.path.join(s['path'], s['entry']))]; [print(e) for e in errors]; sys.exit(1 if errors else 0)" || exit_code=1
+          python3 -c "import json,os,sys; data=json.load(open('manifest.json', encoding='utf-8')); errors=[]; [errors.append(f\"::error::manifest.json references '{s['name']}' at '{s['path_in_repo']}' but directory does not exist\") for s in data['skills'] if not os.path.isdir(s['path_in_repo'])]; [errors.append(f\"::error::manifest.json references entry '{s['entry']}' for '{s['name']}' but file does not exist\") for s in data['skills'] if os.path.isdir(s['path_in_repo']) and not os.path.isfile(os.path.join(s['path_in_repo'], s['entry']))]; [print(e) for e in errors]; sys.exit(1 if errors else 0)" || exit_code=1
 
           [ "$exit_code" -eq 0 ] && echo "manifest.json is in sync with skills/ directory."
           exit $exit_code
