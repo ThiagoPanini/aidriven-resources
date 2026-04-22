@@ -4,8 +4,15 @@
   "description": "AI resources and artifacts for aidriven project",
   "version": "0.1.0",
   "schema_version": 1,
-  "updated_at": "2026-04-06",
+  "updated_at": "2026-04-22",
   "skills": [
+    {
+      "name": "ai-dev-setup",
+      "description": "Bootstrap and optimize a repository for AI-assisted development.",
+      "path_in_repo": "skills/ai-dev-setup",
+      "entry": "SKILL.md",
+      "added_in": "0.1.0"
+    },
     {
       "name": "github-actions-workflow-setup",
       "description": "Create, update, or modernize GitHub Actions workflows for any repository.",
@@ -14,30 +21,16 @@
       "added_in": "0.1.0"
     },
     {
-      "name": "prompt-engineering",
-      "description": "Turn vague, weak, or incomplete requests into clear, robust, reusable prompts.",
-      "path_in_repo": "skills/prompt-engineering",
-      "entry": "SKILL.md",
-      "added_in": "0.1.0"
-    },
-    {
-      "name": "python-project-setup",
-      "description": "Configure modern Python development tooling for any Python project.",
-      "path_in_repo": "skills/python-project-setup",
-      "entry": "SKILL.md",
-      "added_in": "0.1.0"
-    },
-    {
       "name": "python-unit-tests",
-      "description": "Generate high-quality Python unit tests using pytest with the Given/When/Then pattern.",
+      "description": "Generate high-quality Python unit tests using pytest, organized with the Given/When/Then (GWT) pattern.",
       "path_in_repo": "skills/python-unit-tests",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     },
     {
-      "name": "skill-creator",
-      "description": "Create new skills, modify and improve existing skills, and measure skill performance.",
-      "path_in_repo": "skills/skill-creator",
+      "name": "repo-skill-maintainer",
+      "description": "Maintain the aidriven-resources skills catalog itself — add a new skill, edit an existing one, fix a failing validator run, regenerate the manifest, or prepare a release of this repository.",
+      "path_in_repo": "skills/repo-skill-maintainer",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     }
