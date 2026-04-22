@@ -1,7 +1,7 @@
 **settings.**
-.claude/
-.copilot/
-.agents/
+# .claude/
+# .copilot/
+# .agents/
 
 # Local skill-registry lockfile (tool-generated, not part of the distributable catalog)
 skills-lock.json
