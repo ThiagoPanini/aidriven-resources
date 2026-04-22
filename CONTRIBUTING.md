@@ -30,8 +30,8 @@ A draft PR is opened automatically on first push.
 
 ## Branch taxonomy (enforced by CI)
 
-Every branch targeting `main` must follow this convention. The `PR Hygiene`
-workflow rejects anything else (except `dependabot/**` and `revert-**`).
+Every branch targeting `main` must follow this convention. The `CI` workflow
+rejects anything else (except `dependabot/**` and `revert-**`).
 
 | Prefix | Use for | Semver bump at release | PR title prefix | Auto-label |
 |---|---|---|---|---|
@@ -77,9 +77,9 @@ Rules:
 
 ## What CI enforces
 
-Two workflows run on every push and PR:
+One CI workflow runs on every push and PR:
 
-**[Validate](.github/workflows/validate.yml)** — the quality gate:
+**[CI](.github/workflows/ci.yml)** — quality and convention gates:
 
 - `SKILL.md` exists in every skill directory and has valid YAML frontmatter.
 - `name:` frontmatter matches the directory name (both kebab-case).
@@ -87,9 +87,6 @@ Two workflows run on every push and PR:
 - All relative markdown links resolve.
 - `manifest.json` is in sync with `skills/` (same names, real paths).
 - Markdown and YAML pass lint.
-
-**[PR Hygiene](.github/workflows/pr.yml)** — the convention gate:
-
 - Branch name matches the taxonomy above.
 - PR title matches the branch prefix.
 - For `feat/` and `fix/` branches, the diff is scoped to a single skill.

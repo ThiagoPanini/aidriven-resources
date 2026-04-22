@@ -58,7 +58,7 @@ git commit -am "release: vX.Y.Z"
 git push -u origin release/vX.Y.Z
 ```
 
-The `PR Hygiene` workflow will accept this branch because it matches
+The `CI` workflow will accept this branch because it matches
 `release/v<semver>`. Open a PR titled `release: vX.Y.Z`, get it reviewed,
 then merge into `main`.
 

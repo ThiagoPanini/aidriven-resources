@@ -31,8 +31,8 @@ arrive at the gates with a green tree.
 
 ## Branch taxonomy (enforced by CI)
 
-Every agent-driven change must use the right branch prefix. The `PR Hygiene`
-workflow rejects anything else.
+Every agent-driven change must use the right branch prefix. The `CI` workflow
+rejects anything else.
 
 | Prefix | Use for | Release bump |
 |---|---|---|
@@ -76,7 +76,7 @@ git checkout -b fix/<existing-skill-name>
 * Don't rename the directory without also updating the `name:` frontmatter field — the validator
   will fail the mismatch.
 * Commit title: `fix(<skill>): <summary>`. PR title prefix must match the branch prefix or the
-  `PR Hygiene` workflow fails.
+  `CI` workflow fails.
 
 ### 3. Fix a failing validator
 

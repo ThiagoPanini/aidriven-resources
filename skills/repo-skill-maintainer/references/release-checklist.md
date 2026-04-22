@@ -24,7 +24,7 @@ The helper checks for a clean tree, fast-forwards `main`, creates
 `release/vX.Y.Z`, bumps `manifest.json`, runs `make sync` and
 `make release-check`, commits `release: vX.Y.Z`, and pushes the branch.
 
-The `PR Hygiene` workflow accepts `release/v<semver>` branches specifically.
+The `CI` workflow accepts `release/v<semver>` branches specifically.
 Open a PR titled `release: vX.Y.Z`, get a review, and merge.
 
 ## 3. Tag and push
