@@ -17,16 +17,12 @@ Look at the branch prefixes of every PR merged since the previous tag:
 ## 2. Cut the release branch
 
 ```bash
-git checkout main && git pull --ff-only
-git checkout -b release/vX.Y.Z
-
-$EDITOR manifest.json                # bump "version"
-make sync                            # refresh updated_at + derived fields
-make release-check                   # local preflight
-
-git commit -am "release: vX.Y.Z"
-git push -u origin release/vX.Y.Z
+make prepare-release version=X.Y.Z
 ```
+
+The helper checks for a clean tree, fast-forwards `main`, creates
+`release/vX.Y.Z`, bumps `manifest.json`, runs `make sync` and
+`make release-check`, commits `release: vX.Y.Z`, and pushes the branch.
 
 The `PR Hygiene` workflow accepts `release/v<semver>` branches specifically.
 Open a PR titled `release: vX.Y.Z`, get a review, and merge.
@@ -36,9 +32,7 @@ Open a PR titled `release: vX.Y.Z`, get a review, and merge.
 After the release PR is merged to `main`:
 
 ```bash
-git checkout main && git pull --ff-only
-git tag vX.Y.Z
-git push origin vX.Y.Z
+make publish-release version=X.Y.Z
 ```
 
 The `Release` workflow runs its own preflight and will **refuse** to publish

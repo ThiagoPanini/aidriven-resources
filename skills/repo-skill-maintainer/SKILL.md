@@ -102,16 +102,10 @@ Releases **must** come from a `release/vX.Y.Z` branch PR — the Release
 workflow's provenance check enforces this.
 
 ```bash
-git checkout -b release/vX.Y.Z
-$EDITOR manifest.json                # bump "version"
-make sync                            # refresh derived fields
-make release-check                   # local preflight
-git commit -am "release: vX.Y.Z"
-git push -u origin release/vX.Y.Z    # open and merge the PR
+make prepare-release version=X.Y.Z   # creates and pushes release/vX.Y.Z
 
 # After merge:
-git checkout main && git pull --ff-only
-git tag vX.Y.Z && git push origin vX.Y.Z
+make publish-release version=X.Y.Z   # tags main and pushes vX.Y.Z
 ```
 
 See [`RELEASING.md`](../../RELEASING.md) for the full checklist.
