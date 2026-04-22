@@ -6,6 +6,13 @@ default: true
 # Allow long lines — skill definitions and references often have wide tables
 MD013: false
 
+# Allow compact skill-reference formatting with dense headings, lists, tables, and snippets
+MD022: false
+MD031: false
+MD032: false
+MD040: false
+MD058: false
+
 # Allow duplicate headings in different sections (common in skill files)
 MD024:
   siblings_only: true

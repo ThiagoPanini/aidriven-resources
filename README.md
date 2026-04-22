@@ -1,144 +1,178 @@
 # aidriven-resources
 
-Curated collection of AI skills for Claude Code, GitHub Copilot, and other AI-assisted development tools. Each skill is a self-contained set of instructions and resources that teaches an AI assistant how to perform a specific task well.
+*Reusable skills, templates, and references for AI-assisted development workflows.*
 
-## Skills
+[![Validate](https://img.shields.io/github/actions/workflow/status/ThiagoPanini/aidriven-resources/validate.yml?branch=main&style=flat-square&label=validate)](https://github.com/ThiagoPanini/aidriven-resources/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/ThiagoPanini/aidriven-resources?style=flat-square)](https://github.com/ThiagoPanini/aidriven-resources/releases)
+[![Catalog](https://img.shields.io/badge/skills-catalog-3c873a?style=flat-square)](skills/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-| Skill | Description |
-|---|---|
-| [github-actions-workflow-setup](skills/github-actions-workflow-setup/) | Create, update, or modernize GitHub Actions workflows for any repository |
-| [python-project-setup](skills/python-project-setup/) | Configure modern Python development tooling (pyproject.toml, ruff, mypy, pre-commit) |
-| [python-unit-tests](skills/python-unit-tests/) | Generate high-quality pytest tests using the Given/When/Then pattern |
-| [skill-creator](skills/skill-creator/) | Create new skills, run evals, benchmark performance, and optimize triggering |
+This repository is a curated catalog of **agent skills**: self-contained instruction packs that help
+AI coding assistants perform specific tasks with more consistency, context, and care. Each skill
+combines a `SKILL.md` entry point with optional references, reusable assets, and deterministic
+scripts.
 
-The full list with metadata is available in [`skills.json`](skills.json).
+Use it as a source of ready-made skills, or as a reference for building your own skill catalog.
 
-## Skill structure
+**Contents:** [Skill catalog](#skill-catalog) · [Quick start](#quick-start) · [Skill anatomy](#skill-anatomy) · [Repository layout](#repository-layout) · [Operating model](#operating-model) · [Maintainer workflow](#maintainer-workflow)
 
-Every skill follows the same layout:
+## Skill catalog
 
+| Skill | Use it for | Includes |
+|---|---|---|
+| [`ai-dev-setup`](skills/ai-dev-setup/) | Auditing, bootstrapping, and optimizing repositories for AI-assisted development. | Detection, backup, validation scripts; templates for agent files; references for MCP, SDD, token optimization, and agent IDE setup. |
+| [`github-actions-workflow-setup`](skills/github-actions-workflow-setup/) | Creating, updating, or modernizing GitHub Actions workflows. | Action catalog, workflow patterns, and stack-specific CI/CD recipes for Python, Node.js, Go, Rust, Docker, and publishing flows. |
+| [`python-unit-tests`](skills/python-unit-tests/) | Generating pytest unit tests with clear Given/When/Then structure. | Test planning guidance, fixture and mocking rules, parameterization patterns, and edge-case coverage strategy. |
+| [`repo-skill-maintainer`](skills/repo-skill-maintainer/) | *Internal.* Maintaining this catalog itself — adding skills, fixing validator failures, preparing releases. | Validator rules, description guidelines, release checklist. |
+
+> [!NOTE]
+> [`manifest.json`](manifest.json) is **derived** from each skill's `SKILL.md` frontmatter. Do not edit it by hand — run `make sync` instead.
+
+## Quick start
+
+Clone the catalog:
+
+```bash
+git clone https://github.com/ThiagoPanini/aidriven-resources.git
+cd aidriven-resources
 ```
+
+Install a skill into a project-local skills directory:
+
+```bash
+mkdir -p /path/to/your-project/.agents/skills
+cp -R skills/python-unit-tests /path/to/your-project/.agents/skills/
+```
+
+For Claude Code-style project skills, use `.claude/skills/` instead:
+
+```bash
+mkdir -p /path/to/your-project/.claude/skills
+cp -R skills/github-actions-workflow-setup /path/to/your-project/.claude/skills/
+```
+
+Then invoke the skill by name in your assistant prompt, for example:
+
+```text
+Use the python-unit-tests skill to add pytest coverage for src/orders.py.
+```
+
+> [!TIP]
+> The `description` field in each `SKILL.md` is what helps an assistant decide when to activate a skill automatically. Keep it specific, action-oriented, and full of realistic trigger phrases.
+
+## Skill anatomy
+
+Every skill follows the same basic shape:
+
+```text
 skill-name/
-├── SKILL.md              # Entry point (required) — YAML frontmatter + instructions
-├── references/           # Documentation loaded into context as needed
-├── assets/               # Templates, config files, static resources
-└── scripts/              # Helper scripts for deterministic tasks
+├── SKILL.md       # Required entry point: YAML frontmatter + instructions
+├── references/    # Optional deeper guidance loaded only when needed
+├── assets/        # Optional templates, snippets, configs, and static files
+└── scripts/       # Optional executable helpers for repeatable work
 ```
 
-`SKILL.md` must start with YAML frontmatter containing at least `name` and `description`. The description controls when the AI assistant activates the skill. Only `SKILL.md` is required — the subdirectories are optional.
+`SKILL.md` starts with YAML frontmatter:
 
-## Using a skill
-
-### Claude Code
-
-Copy the skill directory into your project's `.claude/skills/`:
-
-```bash
-cp -r skills/python-project-setup .claude/skills/
+```yaml
+---
+name: python-unit-tests
+description: Generate high-quality Python unit tests using pytest with the Given/When/Then pattern.
+---
 ```
 
-Or reference it directly when installing from this repository.
-
-### GitHub Copilot
-
-Copy the skill directory into your project's `.copilot/skills/`:
-
-```bash
-cp -r skills/python-project-setup .copilot/skills/
-```
-
-### Pinning a version
-
-Each [release](https://github.com/ThiagoPanini/aidriven-resources/releases) is tagged with a semantic version (e.g., `v0.1.0`). To use a stable snapshot instead of tracking `main`:
-
-```bash
-git clone --branch v0.1.0 --depth 1 https://github.com/ThiagoPanini/aidriven-resources.git
-```
-
-The `version` field in [`skills.json`](skills.json) always matches the latest release tag.
+Good skills are small enough to load quickly, but complete enough to guide an agent through the
+task without guesswork. Prefer focused references and scripts over one giant instruction file.
 
 ## Repository layout
 
-```
+```text
 aidriven-resources/
-├── skills/                  # Canonical source of all published skills
+├── skills/                 # Published skill source (the catalog)
+│   ├── ai-dev-setup/
 │   ├── github-actions-workflow-setup/
-│   ├── python-project-setup/
 │   ├── python-unit-tests/
-│   └── skill-creator/
-├── skills.json              # Manifest — lists all skills with metadata
-├── .claude/skills/          # Internal skills used to maintain this repo (Claude Code)
-├── .copilot/skills/         # Internal skills used to maintain this repo (Copilot)
+│   └── repo-skill-maintainer/       # Internal maintenance skill
+├── scripts/                # Repo automation (validator, manifest sync, scaffolder)
+│   ├── validate_repo.py
+│   ├── sync_manifest.py
+│   └── new_skill.py
+├── manifest.json           # Derived catalog (generated from SKILL.md frontmatter)
+├── Makefile                # Maintainer entry points
+├── CONTRIBUTING.md
+├── RELEASING.md
 ├── .github/
-│   ├── workflows/           # CI, validation, release, auto-PR workflows
-│   ├── ISSUE_TEMPLATE/      # Bug report and feature request templates
+│   ├── workflows/          # CI and release automation
+│   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   ├── CODEOWNERS
 │   └── dependabot.yml
-├── .editorconfig
 ├── .markdownlint.yml
 ├── .yamllint.yml
 └── .gitignore
 ```
 
-`skills/` is the distributable content. `.claude/` and `.copilot/` are internal tooling consumed by this project itself and are not intended for external use.
+Ignored directories such as `.agents/` and `.claude/` may exist locally for maintaining this
+repository, but distributable skills live under [`skills/`](skills/).
 
-## Contributing
+## Operating model
 
-All changes go through pull requests. Direct push to `main` is blocked.
+One idea drives the whole repo:
 
-### Adding a new skill
+> **`SKILL.md` frontmatter is the single source of truth. Everything else is derived.**
 
-1. Create a branch: `feat/skill-name`
-2. Add `skills/skill-name/SKILL.md` with YAML frontmatter (`name`, `description`)
-3. Add supporting files under `references/`, `assets/`, or `scripts/` as needed
-4. Add an entry to `skills.json`
-5. Push — a draft PR is created automatically and CI runs on the branch
+- `manifest.json` is regenerated from each `SKILL.md`'s frontmatter by
+  [`scripts/sync_manifest.py`](scripts/sync_manifest.py). Only `version` and `added_in` are
+  human-owned; the rest is mechanical.
+- [`scripts/validate_repo.py`](scripts/validate_repo.py) is the **authoritative quality gate** —
+  CI runs the exact same script, so "green locally" means "green in CI".
+- GitHub Actions enforce mandatory gates: validator + manifest sync on every push/PR; release
+  preflight on every `v*` tag.
+- The [`repo-skill-maintainer`](skills/repo-skill-maintainer/) skill is an **accelerator**, not a
+  gate — it helps agents do the right thing by default.
 
-### Updating an existing skill
+## Maintainer workflow
 
-1. Create a branch: `fix/skill-name-short-description`
-2. Edit the skill files
-3. Update `skills.json` if the description changed
-4. Push — draft PR is created, CI validates everything
+Everything you need is behind four Make targets:
 
-### Branch naming
+```bash
+make validate        # Run the repository validator (structure + frontmatter + manifest sync)
+make sync            # Regenerate manifest.json from SKILL.md frontmatter
+make sync-check      # Fail if manifest.json is out of sync (non-destructive)
+make release-check   # Full preflight — same gates CI runs before a release
+```
 
-| Prefix | Purpose | Auto-label |
+Plus two helpers:
+
+```bash
+make new-skill name=<kebab-case-name>   # Scaffold skills/<name>/
+make lint                                # Markdown + YAML lint
+```
+
+For the full flow, see [`CONTRIBUTING.md`](CONTRIBUTING.md). For releases, see
+[`RELEASING.md`](RELEASING.md).
+
+### Branch taxonomy (enforced by CI)
+
+| Prefix | Use for | Release bump |
 |---|---|---|
-| `feat/**` | New skill or feature | `new-skill` |
-| `fix/**` | Fix or update to existing skill | `skill-update` |
-| `chore/**` | CI, config, governance changes | `governance` |
+| `feat/<slug>` | New skill or new capability | minor |
+| `fix/<slug>` | Correction to existing skill | patch |
+| `chore/<slug>` | CI, Makefile, governance, internal skills | patch |
+| `docs/<slug>` | README/CONTRIBUTING/RELEASING edits | none |
+| `release/vX.Y.Z` | Release PRs | — |
 
-### What CI checks
+`feat/` and `fix/` branches are scope-locked by CI to `skills/<slug>/` plus a
+short allow-list of root files. Dependabot branches bypass the convention.
+Full details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Every PR must pass these checks before merge:
+### What CI enforces
 
-| Check | What it validates |
-|---|---|
-| **Markdown Lint** | Markdown formatting in `skills/` and `README.md` |
-| **Link Check** | No broken links in markdown files |
-| **YAML Lint** | Valid YAML in `.github/` workflow files |
-| **Validate Skill Structure** | Every skill has `SKILL.md` with frontmatter, kebab-case naming, `skills.json` is in sync |
-
-### Merge strategy
-
-All PRs are **squash merged** — each PR becomes a single clean commit on `main`. Branches are deleted automatically after merge.
-
-## Versioning
-
-This repository uses **repository-wide semantic versioning** tracked in `skills.json`:
-
-- The `version` field reflects the current release version
-- Each GitHub Release tag (e.g., `v0.1.0`) must match the manifest version
-- Individual skills track which version they were added in via the `added_in` field
-
-### Creating a release
-
-1. Bump `version` in `skills.json` and merge via PR
-2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`
-3. The release workflow validates the tag against the manifest and creates a GitHub Release with auto-generated notes
-
-## License
-
-[MIT](LICENSE)
+| Workflow | Triggered on | What it prevents |
+|---|---|---|
+| [`Validate`](.github/workflows/validate.yml) — `validate` | every push, every PR | missing `SKILL.md`, broken frontmatter, kebab-case violations, name/dir mismatch, duplicate skills, broken relative links, manifest drift |
+| [`Validate`](.github/workflows/validate.yml) — `lint` | every push, every PR | markdown and YAML formatting regressions |
+| [`PR Hygiene`](.github/workflows/pr.yml) — `branch-name` | every push, every PR | off-convention branch names |
+| [`PR Hygiene`](.github/workflows/pr.yml) — `pr-title` | every PR | PR titles that don't match the branch prefix |
+| [`PR Hygiene`](.github/workflows/pr.yml) — `skill-scope` | every `feat/*` / `fix/*` PR | PRs that accidentally touch multiple skills |
+| [`Release`](.github/workflows/release.yml) — `preflight` | `v*` tags | drifted manifest, tag/version mismatch, or a tag that didn't come from a `release/v*` PR |
