@@ -2,7 +2,7 @@
 
 *Reusable skills, templates, and references for AI-assisted development workflows.*
 
-[![Validate](https://img.shields.io/github/actions/workflow/status/ThiagoPanini/aidriven-resources/validate.yml?branch=main&style=flat-square&label=validate)](https://github.com/ThiagoPanini/aidriven-resources/actions/workflows/validate.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/ThiagoPanini/aidriven-resources/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/ThiagoPanini/aidriven-resources/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/ThiagoPanini/aidriven-resources?style=flat-square)](https://github.com/ThiagoPanini/aidriven-resources/releases)
 [![Catalog](https://img.shields.io/badge/skills-catalog-3c873a?style=flat-square)](skills/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
@@ -126,7 +126,7 @@ One idea drives the whole repo:
   human-owned; the rest is mechanical.
 - [`scripts/validate_repo.py`](scripts/validate_repo.py) is the **authoritative quality gate** —
   CI runs the exact same script, so "green locally" means "green in CI".
-- GitHub Actions enforce mandatory gates: validator + manifest sync on every push/PR; release
+- GitHub Actions enforce mandatory CI gates: validator + manifest sync on every push/PR; release
   preflight on every `v*` tag.
 - The [`repo-skill-maintainer`](skills/repo-skill-maintainer/) skill is an **accelerator**, not a
   gate — it helps agents do the right thing by default.
@@ -170,9 +170,9 @@ Full details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 | Workflow | Triggered on | What it prevents |
 |---|---|---|
-| [`Validate`](.github/workflows/validate.yml) — `validate` | every push, every PR | missing `SKILL.md`, broken frontmatter, kebab-case violations, name/dir mismatch, duplicate skills, broken relative links, manifest drift |
-| [`Validate`](.github/workflows/validate.yml) — `lint` | every push, every PR | markdown and YAML formatting regressions |
-| [`PR Hygiene`](.github/workflows/pr.yml) — `branch-name` | every push, every PR | off-convention branch names |
-| [`PR Hygiene`](.github/workflows/pr.yml) — `pr-title` | every PR | PR titles that don't match the branch prefix |
-| [`PR Hygiene`](.github/workflows/pr.yml) — `skill-scope` | every `feat/*` / `fix/*` PR | PRs that accidentally touch multiple skills |
+| [`CI`](.github/workflows/ci.yml) — `validate` | every push, every PR | missing `SKILL.md`, broken frontmatter, kebab-case violations, name/dir mismatch, duplicate skills, broken relative links, manifest drift |
+| [`CI`](.github/workflows/ci.yml) — `lint` | every push, every PR | markdown and YAML formatting regressions |
+| [`CI`](.github/workflows/ci.yml) — `branch-name` | every push, every PR | off-convention branch names |
+| [`CI`](.github/workflows/ci.yml) — `pr-title` | every PR | PR titles that don't match the branch prefix |
+| [`CI`](.github/workflows/ci.yml) — `skill-scope` | every `feat/*` / `fix/*` PR | PRs that accidentally touch multiple skills |
 | [`Release`](.github/workflows/release.yml) — `preflight` | `v*` tags | drifted manifest, tag/version mismatch, or a tag that didn't come from a `release/v*` PR |
