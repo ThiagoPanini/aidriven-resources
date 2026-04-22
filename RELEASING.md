@@ -31,6 +31,24 @@ of each merged PR tells you which bump it requires:
 
 ## Cut the release
 
+Use the release helper from a clean checkout:
+
+```bash
+make prepare-release version=X.Y.Z
+```
+
+It performs the guarded flow end to end:
+
+- checks that the working tree is clean
+- checks out and fast-forwards `main`
+- creates `release/vX.Y.Z`
+- bumps `manifest.json` `version`
+- runs `make sync` and `make release-check`
+- commits `release: vX.Y.Z`
+- pushes the branch to `origin`
+
+Manual equivalent:
+
 ```bash
 git checkout -b release/vX.Y.Z
 $EDITOR manifest.json                 # bump "version" to X.Y.Z
@@ -47,6 +65,12 @@ then merge into `main`.
 ## Tag and publish
 
 After the `release/vX.Y.Z` PR is merged:
+
+```bash
+make publish-release version=X.Y.Z
+```
+
+Manual equivalent:
 
 ```bash
 git checkout main

@@ -1,4 +1,4 @@
-.PHONY: help validate sync sync-check release-check lint-md lint-yaml lint new-skill
+.PHONY: help validate sync sync-check release-check prepare-release publish-release lint-md lint-yaml lint new-skill
 
 PYTHON ?= python3
 
@@ -16,6 +16,14 @@ sync-check: ## Fail if manifest.json is out of sync (non-destructive)
 
 release-check: validate sync-check ## Full preflight — same gates CI runs before a release
 	@echo "release-check: OK — safe to tag."
+
+prepare-release: ## Create and push release branch: make prepare-release version=0.2.0
+	@test -n "$(version)" || { echo "usage: make prepare-release version=<semver>"; exit 1; }
+	@$(PYTHON) scripts/release.py prepare "$(version)"
+
+publish-release: ## Tag and push a merged release: make publish-release version=0.2.0
+	@test -n "$(version)" || { echo "usage: make publish-release version=<semver>"; exit 1; }
+	@$(PYTHON) scripts/release.py publish "$(version)"
 
 lint-md: ## Lint all markdown with markdownlint-cli (requires npm install -g markdownlint-cli)
 	@markdownlint --config .markdownlint.yml "**/*.md" --ignore node_modules
