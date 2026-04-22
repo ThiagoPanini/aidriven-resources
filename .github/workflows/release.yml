@@ -12,15 +12,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Create Release
+  preflight:
+    name: Release preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Validate manifest.json version matches tag
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate skills and manifest
+        run: python3 scripts/validate_repo.py
+
+      - name: Fail if manifest is out of sync with skills/
+        run: python3 scripts/sync_manifest.py --check
+
+      - name: Validate tag matches manifest.json version
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
           manifest_version=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
@@ -29,6 +39,44 @@ jobs:
             exit 1
           fi
           echo "Tag v${tag} matches manifest version."
+
+      - name: Enforce release provenance (must come from release/v* PR)
+        run: |
+          set -e
+          tag="${GITHUB_REF#refs/tags/}"
+          subject=$(git log -1 --format=%s)
+          parents=$(git log -1 --format=%P | wc -w)
+
+          echo "Tag:      $tag"
+          echo "Subject:  $subject"
+          echo "Parents:  $parents"
+
+          # Accept one of:
+          #   (a) direct commit on main whose subject starts with 'release:'
+          #   (b) merge commit (>=2 parents) that merged a 'release/v*' branch — GitHub's default
+          #       merge subject is "Merge pull request #N from <owner>/release/vX.Y.Z"
+          if echo "$subject" | grep -qE '^release: v?[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Release provenance OK (direct release commit)."
+            exit 0
+          fi
+
+          if [ "$parents" -ge 2 ] && echo "$subject" | grep -qE 'release/v?[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Release provenance OK (merge from release/* branch)."
+            exit 0
+          fi
+
+          echo "::error::Tag ${tag} was not produced from a 'release/vX.Y.Z' branch PR or a 'release: vX.Y.Z' commit."
+          echo "::error::See RELEASING.md for the required flow."
+          exit 1
+
+  release:
+    name: Create Release
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: softprops/action-gh-release@v3
         with:

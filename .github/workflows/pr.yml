@@ -1,0 +1,207 @@
+name: PR Hygiene
+
+on:
+  push:
+    branches-ignore: [main, 'dependabot/**', 'revert-**']
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    name: Branch naming convention
+    # Dependabot and revert branches are allowed to bypass the convention.
+    if: |
+      !startsWith(github.ref_name, 'dependabot/') &&
+      !startsWith(github.ref_name, 'revert-') &&
+      github.head_ref != null || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch prefix and slug
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -e
+          echo "Checking branch name: '$BRANCH'"
+
+          if [[ "$BRANCH" == dependabot/* || "$BRANCH" == revert-* || "$BRANCH" == "main" ]]; then
+            echo "Branch is exempt from naming convention."
+            exit 0
+          fi
+
+          # Release branches have their own (stricter) rule — checked first because
+          # the general kebab-case regex below does not allow dots.
+          if [[ "$BRANCH" == release/* ]]; then
+            if echo "$BRANCH" | grep -qE '^release/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+              echo "Release branch OK."
+              exit 0
+            fi
+            echo "::error::Release branch '$BRANCH' must be named 'release/vX.Y.Z' (semver)."
+            exit 1
+          fi
+
+          if ! echo "$BRANCH" | grep -qE '^(feat|fix|chore|docs)/[a-z0-9][a-z0-9-]*$'; then
+            echo "::error::Branch '$BRANCH' does not follow the required convention."
+            echo "::error::Expected one of: feat/<slug>, fix/<slug>, chore/<slug>, docs/<slug>, release/v<semver>"
+            echo "::error::See CONTRIBUTING.md for the full branch taxonomy."
+            exit 1
+          fi
+
+          echo "Branch name OK."
+
+  pr-title:
+    name: PR title convention
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title matches branch prefix
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -e
+          echo "PR title:  '$PR_TITLE'"
+          echo "Head ref:  '$HEAD_REF'"
+
+          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|chore|docs|release)(\([a-z0-9-]+\))?: .{3,}$'; then
+            echo "::error::PR title must start with feat/fix/chore/docs/release."
+            echo "::error::Optional scopes are allowed, for example: feat(skill-name): summary."
+            echo "::error::Example: 'feat(python-unit-tests): add parametrize guidance'"
+            exit 1
+          fi
+
+          branch_prefix="${HEAD_REF%%/*}"
+          title_prefix=$(echo "$PR_TITLE" | sed -E 's/^([a-z]+)(\(.*\))?:.*/\1/')
+
+          if [ "$branch_prefix" != "$title_prefix" ]; then
+            echo "::error::PR title prefix '$title_prefix' does not match branch prefix '$branch_prefix'."
+            echo "::error::A 'feat/*' branch must use a 'feat:' PR title, and so on."
+            exit 1
+          fi
+
+          echo "PR title OK."
+
+  skill-scope:
+    name: Skill scope (feat/fix only)
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      (startsWith(github.head_ref, 'feat/') || startsWith(github.head_ref, 'fix/'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check changes are scoped to a single skill
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -e
+          slug="${HEAD_REF#*/}"
+          echo "Expected skill slug: '$slug'"
+
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          echo "Changed files:"
+          echo "$changed" | sed 's/^/  /'
+
+          # Root-level files that may legitimately change alongside a skill edit
+          allowed_root_regex='^(manifest\.json|README\.md|CONTRIBUTING\.md|RELEASING\.md)$'
+          violations=""
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if echo "$file" | grep -qE "$allowed_root_regex"; then
+              continue
+            fi
+            if [[ "$file" == skills/"$slug"/* ]]; then
+              continue
+            fi
+            violations="$violations\n  $file"
+          done <<< "$changed"
+
+          if [ -n "$violations" ]; then
+            echo "::error::PR scope violation — this branch must only touch skills/$slug/ plus allowed root files."
+            echo "::error::Out-of-scope files:"
+            printf '%b\n' "$violations" | while read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done
+            echo "::error::Split the PR, or rename the branch if the scope is intentionally broader."
+            exit 1
+          fi
+
+          echo "Skill scope OK — all changes target skills/$slug/ or allowed root files."
+
+  open-pr:
+    name: Auto-open draft PR
+    if: |
+      github.event_name == 'push' &&
+      github.ref != 'refs/heads/main' &&
+      !startsWith(github.ref_name, 'dependabot/')
+    needs: [branch-name]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Determine PR metadata from branch name
+        id: meta
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          prefix="${branch%%/*}"
+          suffix="${branch#*/}"
+
+          case "$prefix" in
+            feat)    label="new-skill" ;;
+            fix)     label="skill-update" ;;
+            chore)   label="governance" ;;
+            docs)    label="docs" ;;
+            release) label="release" ;;
+            *)       label="" ;;
+          esac
+
+          title_suffix=$(
+            echo "$suffix" |
+              tr '-' ' ' |
+              python3 -c "import sys; print(sys.stdin.read().strip().capitalize())"
+          )
+          title="${prefix}: ${title_suffix}"
+
+          echo "label=$label"   >> "$GITHUB_OUTPUT"
+          echo "title=$title"   >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR if none exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --head "${{ steps.meta.outputs.branch }}" --state open --json number --jq 'length')
+
+          if [ "$existing" -gt 0 ]; then
+            echo "PR already exists for ${{ steps.meta.outputs.branch }}, skipping."
+            exit 0
+          fi
+
+          label_flag=""
+          if [ -n "${{ steps.meta.outputs.label }}" ]; then
+            label_flag="--label ${{ steps.meta.outputs.label }}"
+          fi
+
+          gh pr create \
+            --title "${{ steps.meta.outputs.title }}" \
+            --body "Automated draft PR for branch \`${{ steps.meta.outputs.branch }}\`." \
+            --base main \
+            --head "${{ steps.meta.outputs.branch }}" \
+            --draft \
+            $label_flag

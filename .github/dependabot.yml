@@ -7,7 +7,9 @@ updates:
       interval: "weekly"
       day: "monday"
     commit-message:
-      prefix: "ci"
+      prefix: "chore"
+      include: "scope"
     labels:
+      - "governance"
       - "dependencies"
     open-pull-requests-limit: 5
