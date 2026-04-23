@@ -63,6 +63,7 @@ jobs:
           args: >-
             --offline
             --no-progress
+            --no-include-fragments
             --exclude-path .agents
             --exclude-path .claude
             --exclude-path node_modules
