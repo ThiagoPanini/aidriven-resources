@@ -50,6 +50,24 @@ jobs:
       - name: YAML lint
         run: yamllint -c .yamllint.yml .github/ .markdownlint.yml .yamllint.yml
 
+  link-check:
+    name: Internal link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check internal markdown links with lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: true
+          args: >-
+            --offline
+            --no-progress
+            --exclude-path .agents
+            --exclude-path .claude
+            --exclude-path node_modules
+            './**/*.md'
+
   branch-name:
     name: Branch naming convention
     if: |
@@ -134,7 +152,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref != 'refs/heads/main' &&
       !startsWith(github.ref_name, 'dependabot/')
-    needs: [validate, lint, branch-name]
+    needs: [validate, lint, link-check, branch-name]
     runs-on: ubuntu-latest
     permissions:
       contents: read
