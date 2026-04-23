@@ -186,7 +186,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref != 'refs/heads/main' &&
       !startsWith(github.ref_name, 'dependabot/')
-    needs: [branch-name]
+    needs: [validate, lint, branch-name, pr-title, skill-scope]
     runs-on: ubuntu-latest
     permissions:
       contents: read
