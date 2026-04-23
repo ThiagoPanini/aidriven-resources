@@ -8,19 +8,19 @@ Before any write:
 
 1. Detection profile exists at `.ai-dev-setup/last-detection.json` (or in memory from Phase 1).
 2. User has approved each decision, or approved the scope.
-3. Git state known. If dirty, warn and offer to stash or create a branch.
-4. Working directory ensured: `mkdir -p .ai-dev-setup/backups .ai-dev-setup` as needed.
+3. Git state known. If dirty, warn and offer to stash or create a branch — **git is the rollback mechanism**, so the working tree must be in a state where diffs are meaningful.
+4. Working directory ensured: `mkdir -p .ai-dev-setup` as needed.
 5. `.ai-dev-setup/` is git-ignored (add an entry to `.gitignore` on first use if missing).
 
-## Backup rules
+## Reversibility via git
 
-Every file the skill modifies gets a snapshot first.
+This skill does **not** maintain its own backup tarballs. Rollback relies on git:
 
-- Script: `scripts/backup.sh <file1> <file2> ...`
-- Destination: `.ai-dev-setup/backups/<UTC-timestamp>/restore.tar` (single tar per install run).
-- On exit with non-zero, the final report must include the exact restore command.
+- Make sure the tree is clean (or intentionally dirty with known changes) before each install step.
+- Prefer one logical change per commit so a targeted `git revert` works cleanly.
+- If the user wants to land everything in one commit, still stage each change separately so `git diff --staged` is reviewable.
 
-Backups are additive and never pruned automatically. If disk space is a concern, instruct the user to clean older ones.
+If the repo is not a git repository, warn the user up front and either (a) initialize one with their approval or (b) proceed only with fully additive, easy-to-delete changes.
 
 ## Write rules
 
@@ -51,7 +51,7 @@ Changes:
 - Merged "serena" into .mcp.json (previous: [mintlify])
 - Added hook entry to .claude/settings.json (SessionStart -> serena-hooks activate)
 
-Backup: .ai-dev-setup/backups/2026-04-22T14-02-11Z/restore.tar
+Commit(s): <sha> (or "uncommitted — see git diff")
 ```
 
 This is the single source of truth for what this skill has done over time.
@@ -72,39 +72,40 @@ Validation **must run**. A setup that "installed without errors" but doesn't act
 
 ## Rollback
 
-Two levels:
+All rollback goes through git. Tailor the command to how much the user wants to undo.
 
-### Full rollback (most common request)
+### Full rollback of an uncommitted run
 ```bash
-# Restore every file touched in the latest run
-tar -xf .ai-dev-setup/backups/<timestamp>/restore.tar -C /
+# Discard everything this skill just wrote (working tree + staged)
+git restore --staged --worktree .
+# If new untracked files were created, drop them too:
+git clean -fd
 ```
 
-If files were created (not modified), they are not in the tar. Include a separate `created-files.txt` manifest in the backup dir so rollback removes them:
-
+### Rollback of a committed run
 ```bash
-xargs -a .ai-dev-setup/backups/<timestamp>/created-files.txt rm -f
+git revert <sha>        # creates an inverse commit — preferred on shared branches
+# or, if the branch is local-only and you're sure:
+git reset --hard <sha-before-run>
 ```
 
 ### Partial rollback
-User wants to keep some changes and revert others. The changelog lists per-file actions with backup locations; instruct the user on the specific file restore:
+The changelog lists per-file actions. Use `git restore` / `git checkout` for just those files:
 
 ```bash
-# Example: restore just .mcp.json
-tar -xf .ai-dev-setup/backups/<ts>/restore.tar -C / .mcp.json
+git restore --source=<sha-before-run> -- .mcp.json
 ```
 
 ### When rollback isn't possible
-Certain operations have side effects beyond files (e.g. running a CLI that mutates global config, installing a binary). List these in the changelog explicitly as "non-reversible via rollback" so the user knows.
+Certain operations have side effects beyond files (running a CLI that mutates global config, installing a binary, writing to `~/`). List these in the changelog explicitly as "non-reversible via git" so the user knows.
 
 ## Summary contract
 
 Every completed run produces, in order:
 
-1. Backup tar under `.ai-dev-setup/backups/<ts>/`.
-2. Changelog entry.
-3. Validation report (pass/fail per category).
-4. User-facing report (see [interaction.md](interaction.md)).
-5. Explicit rollback instructions in the report.
+1. Changelog entry referencing the commit(s) or uncommitted diff.
+2. Validation report (pass/fail per category).
+3. User-facing report (see [interaction.md](interaction.md)).
+4. Explicit rollback instructions (git commands) in the report.
 
 If any of these is missing, the run is not complete.

@@ -73,7 +73,7 @@ Files that shape how agents behave in this repo: instructions, prompts, memory, 
 
 Use the templates in [../../assets/templates/](../../assets/templates/). Apply:
 
-1. `scripts/backup.sh` on the target files.
+1. Confirm the git tree is clean (or diffs are intentional) so the change is revertable.
 2. Write or merge the template content.
 3. Have the user review the diff before commit.
 4. Validate: cat the file, make sure it's < ~150 lines (always-loaded context budget).
