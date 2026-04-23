@@ -4,7 +4,7 @@
   "description": "AI resources and artifacts for aidriven project",
   "version": "0.1.3",
   "schema_version": 1,
-  "updated_at": "2026-04-22",
+  "updated_at": "2026-04-23",
   "skills": [
     {
       "name": "ai-dev-setup",
@@ -24,13 +24,6 @@
       "name": "python-unit-tests",
       "description": "Generate high-quality Python unit tests using pytest, organized with the Given/When/Then (GWT) pattern.",
       "path_in_repo": "skills/python-unit-tests",
-      "entry": "SKILL.md",
-      "added_in": "0.1.0"
-    },
-    {
-      "name": "repo-skill-maintainer",
-      "description": "Maintain the aidriven-resources skills catalog itself — add a new skill, edit an existing one, fix a failing validator run, regenerate the manifest, or prepare a release of this repository.",
-      "path_in_repo": "skills/repo-skill-maintainer",
       "entry": "SKILL.md",
       "added_in": "0.1.0"
     }
