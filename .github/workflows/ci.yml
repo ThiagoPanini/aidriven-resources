@@ -134,7 +134,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref != 'refs/heads/main' &&
       !startsWith(github.ref_name, 'dependabot/')
-    needs: [validate, lint, branch-name, pr-title]
+    needs: [validate, lint, branch-name]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -158,11 +158,15 @@ jobs:
             *)       label="" ;;
           esac
 
-          title_suffix=$(
-            echo "$suffix" |
-              tr '-' ' ' |
-              python3 -c "import sys; print(sys.stdin.read().strip().capitalize())"
-          )
+          if [ "$prefix" = "release" ]; then
+            title_suffix="$suffix"
+          else
+            title_suffix=$(
+              echo "$suffix" |
+                tr '-' ' ' |
+                python3 -c "import sys; print(sys.stdin.read().strip().capitalize())"
+            )
+          fi
           title="${prefix}: ${title_suffix}"
 
           echo "label=$label"   >> "$GITHUB_OUTPUT"
