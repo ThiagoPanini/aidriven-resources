@@ -69,7 +69,6 @@ The repository is configured for AI-assisted maintenance so skills can be author
 - [`CLAUDE.md`](CLAUDE.md) — thin Claude Code entry point that imports `AGENTS.md`, so rule updates propagate without drift.
 - [`.agents/skills/`](.agents/skills/) — canonical install location for maintainer-facing skills used *by* this repo (`ai-dev-setup`, `find-skills`, `skill-creator`, `create-readme`).
 - [`.claude/skills/`](.claude/skills/) — symlinks into `.agents/skills/` so Claude Code discovers the same skills without duplication.
-- [`skills-lock.json`](skills-lock.json) — pins external skills consumed from other repos (`vercel-labs/skills`, `anthropics/skills`, `github/awesome-copilot`) so installs are reproducible and drift is detectable.
 - [`find-skills`](https://skills.sh/) (prerequisite) — discovery helper for `skills.sh`. The `ai-dev-setup` skill requires it before recommending new skills; install it first if it's missing.
 - [`scripts/`](scripts/) + [`Makefile`](Makefile) — deterministic validators, manifest sync, and scaffolder. Agents can run `make validate` / `make sync` to verify their work instead of guessing.
 - [`manifest.json`](manifest.json) — derived catalog index regenerated from each `SKILL.md` frontmatter, keeping agents and humans reading from the same source of truth.

@@ -6,7 +6,6 @@ This repository is a **catalog of agent skills**, not an application. If you are
 
 - [skills/](skills/) — published skills, one folder per skill, each with `SKILL.md` as the entry point plus optional `references/`, `assets/`, `scripts/`.
 - [manifest.json](manifest.json) — **derived** catalog index. Built from each skill's `SKILL.md` frontmatter.
-- [skills-lock.json](skills-lock.json) — pinned external skills consumed from other repos.
 - [.agents/skills/](.agents/skills/) — canonical install location for skills used *by* this repo's maintainers.
 - [.claude/skills/](.claude/skills/) — symlinks pointing into `.agents/skills/` so Claude Code discovers them without duplication.
 - [scripts/](scripts/) — Python helpers: `validate_repo.py`, `sync_manifest.py`, `new_skill.py`, `release.py`.
