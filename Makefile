@@ -1,4 +1,4 @@
-.PHONY: help validate sync sync-check release-check prepare-release publish-release lint-md lint-yaml lint new-skill
+.PHONY: help validate sync sync-check release-check prepare-release publish-release lint-md lint-yaml lint new-skill install-hooks
 
 PYTHON ?= python3
 
@@ -8,11 +8,13 @@ help: ## Show this help message
 validate: ## Run the repository validator (structure + frontmatter + manifest sync)
 	@$(PYTHON) scripts/validate_repo.py
 
-sync: ## Regenerate manifest.json from SKILL.md frontmatter
+sync: ## Regenerate derived catalog artifacts (manifest.json + README sections)
 	@$(PYTHON) scripts/sync_manifest.py
+	@$(PYTHON) scripts/sync_readme.py
 
-sync-check: ## Fail if manifest.json is out of sync (non-destructive)
+sync-check: ## Fail if any derived catalog artifact is out of sync (non-destructive)
 	@$(PYTHON) scripts/sync_manifest.py --check
+	@$(PYTHON) scripts/sync_readme.py --check
 
 release-check: validate sync-check ## Full preflight — same gates CI runs before a release
 	@echo "release-check: OK — safe to tag."
@@ -36,3 +38,7 @@ lint: lint-md lint-yaml ## Run all linters
 new-skill: ## Scaffold a new skill directory: make new-skill name=my-skill
 	@test -n "$(name)" || { echo "usage: make new-skill name=<kebab-case-name>"; exit 1; }
 	@$(PYTHON) scripts/new_skill.py "$(name)"
+
+install-hooks: ## Point git at .githooks/ so pre-commit auto-runs make sync
+	@git config core.hooksPath .githooks
+	@echo "git hooks installed — .githooks/pre-commit will run make sync on SKILL.md changes."

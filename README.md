@@ -18,15 +18,16 @@ Use it as a source of ready-made skills, or as a reference for building your own
 
 ## Skill catalog
 
-| Skill | Use it for | Includes |
-|---|---|---|
-| [`ai-dev-setup`](skills/ai-dev-setup/) | Auditing, bootstrapping, and optimizing repositories for AI-assisted development. | Detection and validation scripts; templates for agent files; references for MCP, SDD, token optimization, and agent IDE setup. |
-| [`github-actions-workflow-setup`](skills/github-actions-workflow-setup/) | Creating, updating, or modernizing GitHub Actions workflows. | Action catalog, workflow patterns, and stack-specific CI/CD recipes for Python, Node.js, Go, Rust, Docker, and publishing flows. |
-| [`python-unit-tests`](skills/python-unit-tests/) | Generating pytest unit tests with clear Given/When/Then structure. | Test planning guidance, fixture and mocking rules, parameterization patterns, and edge-case coverage strategy. |
-| [`repo-skill-maintainer`](skills/repo-skill-maintainer/) | *Internal.* Maintaining this catalog itself — adding skills, fixing validator failures, preparing releases. | Validator rules, description guidelines, release checklist. |
+<!-- skills:catalog:start -->
+| Skill | Use it for |
+|---|---|
+| [`ai-dev-setup`](skills/ai-dev-setup/) | Bootstrap and optimize a repository for AI-assisted development. |
+| [`github-actions-workflow-setup`](skills/github-actions-workflow-setup/) | Create, update, or modernize GitHub Actions workflows for any repository. |
+| [`python-unit-tests`](skills/python-unit-tests/) | Generate high-quality Python unit tests using pytest, organized with the Given/When/Then (GWT) pattern. |
+<!-- skills:catalog:end -->
 
 > [!NOTE]
-> [`manifest.json`](manifest.json) is **derived** from each skill's `SKILL.md` frontmatter. Do not edit it by hand — run `make sync` instead.
+> The table above and the `skills/` subtree in [Repository layout](#repository-layout) are **derived** from each `SKILL.md` frontmatter. Do not edit them by hand — run `make sync` instead. The same applies to [`manifest.json`](manifest.json).
 
 ## Quick start
 
@@ -66,9 +67,8 @@ The repository is configured for AI-assisted maintenance so skills can be author
 
 - [`AGENTS.md`](AGENTS.md) — single source of truth for agent-agnostic rules (Claude Code, Codex, Cursor, Copilot). Keeps catalog conventions in one place instead of duplicating them per tool.
 - [`CLAUDE.md`](CLAUDE.md) — thin Claude Code entry point that imports `AGENTS.md`, so rule updates propagate without drift.
-- [`.agents/skills/`](.agents/skills/) — canonical install location for maintainer-facing skills used *by* this repo (`ai-dev-setup`, `repo-skill-maintainer`, `find-skills`, `skill-creator`, `create-readme`).
+- [`.agents/skills/`](.agents/skills/) — canonical install location for maintainer-facing skills used *by* this repo (`ai-dev-setup`, `find-skills`, `skill-creator`, `create-readme`).
 - [`.claude/skills/`](.claude/skills/) — symlinks into `.agents/skills/` so Claude Code discovers the same skills without duplication.
-- [`skills-lock.json`](skills-lock.json) — pins external skills consumed from other repos (`vercel-labs/skills`, `anthropics/skills`, `github/awesome-copilot`) so installs are reproducible and drift is detectable.
 - [`find-skills`](https://skills.sh/) (prerequisite) — discovery helper for `skills.sh`. The `ai-dev-setup` skill requires it before recommending new skills; install it first if it's missing.
 - [`scripts/`](scripts/) + [`Makefile`](Makefile) — deterministic validators, manifest sync, and scaffolder. Agents can run `make validate` / `make sync` to verify their work instead of guessing.
 - [`manifest.json`](manifest.json) — derived catalog index regenerated from each `SKILL.md` frontmatter, keeping agents and humans reading from the same source of truth.
@@ -104,14 +104,17 @@ task without guesswork. Prefer focused references and scripts over one giant ins
 ```text
 aidriven-resources/
 ├── skills/                 # Published skill source (the catalog)
+<!-- skills:tree:start -->
 │   ├── ai-dev-setup/
 │   ├── github-actions-workflow-setup/
-│   ├── python-unit-tests/
-│   └── repo-skill-maintainer/       # Internal maintenance skill
-├── scripts/                # Repo automation (validator, manifest sync, scaffolder)
+│   └── python-unit-tests/
+<!-- skills:tree:end -->
+├── scripts/                # Repo automation (validator, sync, scaffolder, release helper)
 │   ├── validate_repo.py
 │   ├── sync_manifest.py
-│   └── new_skill.py
+│   ├── sync_readme.py
+│   ├── new_skill.py
+│   └── release.py
 ├── manifest.json           # Derived catalog (generated from SKILL.md frontmatter)
 ├── Makefile                # Maintainer entry points
 ├── CONTRIBUTING.md
@@ -143,8 +146,6 @@ One idea drives the whole repo:
   CI runs the exact same script, so "green locally" means "green in CI".
 - GitHub Actions enforce mandatory CI gates: validator + manifest sync on every push/PR; release
   preflight on every `v*` tag.
-- The [`repo-skill-maintainer`](skills/repo-skill-maintainer/) skill is an **accelerator**, not a
-  gate — it helps agents do the right thing by default.
 
 ## Maintainer workflow
 

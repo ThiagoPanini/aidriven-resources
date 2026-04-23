@@ -1,0 +1,151 @@
+name: Auto release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    name: Decide bump
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - id: plan
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -e
+          subject=$(printf '%s' "$HEAD_MSG" | head -n1)
+          echo "head subject: $subject"
+
+          # Mode 1: the release PR itself was just merged -> push the tag.
+          if echo "$subject" | grep -qE '^release: v[0-9]+\.[0-9]+\.[0-9]+'; then
+            ver=$(echo "$subject" | sed -E 's/^release: v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+            echo "mode=tag" >> "$GITHUB_OUTPUT"
+            echo "version=$ver" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Mode 2: regular merge -> decide bump from commit messages since last tag.
+          last_tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
+          if [ -n "$last_tag" ]; then
+            range="$last_tag..HEAD"
+          else
+            range="HEAD"
+          fi
+          msgs=$(git log --format=%s "$range")
+          echo "commits in range:"
+          printf '%s\n' "$msgs"
+
+          if [ -z "$msgs" ]; then
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          has_feat=$(printf '%s\n' "$msgs" | grep -cE '^feat(\(|:)' || true)
+          has_fix_chore=$(printf '%s\n' "$msgs" | grep -cE '^(fix|chore)(\(|:)' || true)
+          non_docs=$(printf '%s\n' "$msgs" | grep -cvE '^docs(\(|:)' || true)
+
+          if [ "$non_docs" = "0" ]; then
+            echo "mode=skip (docs-only)" >&2
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$has_feat" -gt 0 ]; then
+            level=minor
+          elif [ "$has_fix_chore" -gt 0 ]; then
+            level=patch
+          else
+            echo "mode=skip (no bumpable commits)" >&2
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          cur=$(python3 -c "import json;print(json.load(open('manifest.json'))['version'])")
+          next=$(LEVEL="$level" CUR="$cur" python3 -c "
+          import os
+          level = os.environ['LEVEL']
+          maj, m, p = [int(x) for x in os.environ['CUR'].split('.')]
+          print({'minor': f'{maj}.{m+1}.0', 'patch': f'{maj}.{m}.{p+1}'}[level])
+          ")
+
+          echo "chosen bump: $level ($cur -> $next)"
+          echo "mode=open-pr" >> "$GITHUB_OUTPUT"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+
+  open-release-pr:
+    name: Open release PR
+    needs: decide
+    if: needs.decide.outputs.mode == 'open-pr'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare release branch
+        run: python3 scripts/release.py prepare ${{ needs.decide.outputs.version }}
+
+      - name: Open release PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          v="${{ needs.decide.outputs.version }}"
+          gh pr create \
+            --base main \
+            --head "release/v${v}" \
+            --title "release: v${v}" \
+            --body "Automated release PR. Review and merge to trigger the tag push." \
+            --label release
+
+  tag-release:
+    name: Tag merged release
+    needs: decide
+    if: needs.decide.outputs.mode == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish tag
+        run: python3 scripts/release.py publish ${{ needs.decide.outputs.version }}

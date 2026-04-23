@@ -4,7 +4,59 @@ Releases are cut by merging a **`release/vX.Y.Z`** branch into `main` and
 pushing a matching `vX.Y.Z` tag. Both sides are enforced by CI — the Release
 workflow refuses to publish if the tag didn't come from a release PR.
 
-## Before you tag
+There are two paths to get there:
+
+- **Automated (default).** The [Auto release](.github/workflows/auto-release.yml)
+  workflow opens the release PR and pushes the tag for you. Human review
+  still happens — you approve and merge the release PR by hand.
+- **Manual.** The `make prepare-release` / `make publish-release` flow
+  documented further down. Use it when the automation is broken, when you
+  need to cut an off-schedule patch, or when you want to override the bump
+  the automation picked.
+
+## Automated flow
+
+Triggered on every push to `main`. The workflow runs in one of three modes:
+
+| Head commit subject on `main` | Mode | Action |
+|---|---|---|
+| Starts with `release: vX.Y.Z` (release PR was just merged) | **tag** | `scripts/release.py publish` — pushes the `vX.Y.Z` tag, which triggers [release.yml](.github/workflows/release.yml) |
+| Regular merge with at least one `feat:` / `fix:` / `chore:` since the last tag | **open-pr** | Computes the next version (`feat` → minor, `fix`/`chore` → patch), runs `scripts/release.py prepare`, opens a `release: vX.Y.Z` PR |
+| Only `docs:` commits since the last tag, or no new commits | **skip** | No release produced |
+
+### What you do
+
+1. Merge your `feat/*`, `fix/*`, or `chore/*` PR into `main` as usual.
+2. Wait for **Actions → Auto release** to open a `release: vX.Y.Z` PR.
+3. Review the diff (it should only touch `manifest.json`'s `version` and
+   `updated_at`). Approve and merge.
+4. The same workflow fires again, detects the `release:` subject, and
+   pushes the tag. The existing `Release` workflow publishes from there.
+
+### Prerequisites
+
+- A repository secret named **`RELEASE_PAT`** containing a fine-grained
+  PAT scoped to this repo with `Contents: Read and write`. The default
+  `GITHUB_TOKEN` cannot be used because pushes and PRs it makes don't
+  trigger downstream workflows (including the release PR's own CI and
+  the tag-triggered `Release` workflow).
+- The branch-prefix and PR-title conventions enforced by
+  [`ci.yml`](.github/workflows/ci.yml) — the automated bump reads those
+  prefixes to decide `minor` vs. `patch`.
+
+### When the automation won't help
+
+- **Major bumps.** The workflow only produces `minor` or `patch`. For a
+  breaking change (removed skill, manifest schema change) fall back to the
+  manual flow and pass `version=Y.0.0` explicitly.
+- **Two merges in rapid succession.** The second run may find a
+  `release/vX.Y.Z` branch already created by the first and fail. Nothing
+  is corrupted — close or merge the open release PR, then re-run by pushing
+  an empty commit or invoking the manual flow.
+- **The bump heuristic was wrong.** Close the auto-opened PR and run
+  `make prepare-release version=X.Y.Z` manually with the version you want.
+
+## Before you tag (manual flow)
 
 From a clean checkout of `main`:
 
@@ -29,7 +81,7 @@ of each merged PR tells you which bump it requires:
 | At least one `feat/*` (new skill or new capability) | **minor** (`0.1.0` → `0.2.0`) |
 | Removed/renamed a skill, changed the manifest schema, or any breaking change | **major** (`0.1.0` → `1.0.0`) |
 
-## Cut the release
+## Cut the release (manual flow)
 
 Use the release helper from a clean checkout:
 
@@ -62,7 +114,7 @@ The `CI` workflow will accept this branch because it matches
 `release/v<semver>`. Open a PR titled `release: vX.Y.Z`, get it reviewed,
 then merge into `main`.
 
-## Tag and publish
+## Tag and publish (manual flow)
 
 After the `release/vX.Y.Z` PR is merged:
 
