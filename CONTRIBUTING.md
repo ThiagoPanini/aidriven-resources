@@ -7,16 +7,26 @@ assistant *when* and *how* to perform a specific task.
 ## TL;DR
 
 ```bash
+make install-hooks                          # one-time: wires .githooks/ into this clone
 git checkout -b feat/my-new-skill
 make new-skill name=my-new-skill           # scaffolds skills/my-new-skill/
 $EDITOR skills/my-new-skill/SKILL.md        # replace the placeholder description
-make sync                                   # regenerates manifest.json
 make validate                               # same gate CI runs
-git commit -am "feat: add my-new-skill"
+git commit -am "feat: add my-new-skill"    # pre-commit hook runs make sync for you
 git push -u origin feat/my-new-skill
 ```
 
-A draft PR is opened automatically on first push.
+A draft PR is opened automatically on first push. After it's merged into
+`main`, the release is cut and tagged automatically — you don't need to
+bump versions or run any release commands.
+
+> [!TIP]
+> `make install-hooks` points `core.hooksPath` at [`.githooks/`](.githooks/).
+> The `pre-commit` hook then auto-runs `make sync` whenever a `SKILL.md` is
+> in the staged change, re-staging the regenerated `manifest.json` and
+> README sections so the commit is self-consistent. Running it per clone is
+> a one-liner; skipping it just means you'll have to run `make sync` by
+> hand before pushing (CI will tell you if you forgot).
 
 ## The operating model
 
@@ -25,21 +35,21 @@ A draft PR is opened automatically on first push.
 - **Quality gate**: [`scripts/validate_repo.py`](scripts/validate_repo.py),
   run locally (`make validate`) and by CI on every push and PR.
 - **Hygiene gate**: branch names, PR titles, and PR scope are enforced by CI.
-- **Internal accelerator**: the [`repo-skill-maintainer`](skills/repo-skill-maintainer/)
-  skill encodes all of this for agents working inside the repo.
 
 ## Branch taxonomy (enforced by CI)
 
 Every branch targeting `main` must follow this convention. The `CI` workflow
-rejects anything else (except `dependabot/**` and `revert-**`).
+rejects anything else (except `dependabot/**` and `revert-**`). The prefix
+you pick also tells the [Auto release](.github/workflows/auto-release.yml)
+workflow which semver bump to apply once your PR is merged.
 
 | Prefix | Use for | Semver bump at release | PR title prefix | Auto-label |
 |---|---|---|---|---|
 | `feat/<slug>` | New skill, or new capability in an existing skill | **minor** | `feat:` | `new-skill` |
 | `fix/<slug>` | Correcting instructions, links, or scripts in an existing skill | **patch** | `fix:` | `skill-update` |
 | `chore/<slug>` | CI, Makefile, lint, governance, internal skills | **patch** | `chore:` | `governance` |
-| `docs/<slug>` | README/CONTRIBUTING/RELEASING edits that do not touch skill frontmatter | none | `docs:` | `docs` |
-| `release/vX.Y.Z` | Release PRs (version bump + tag) | — | `release:` | `release` |
+| `docs/<slug>` | README/CONTRIBUTING/RELEASING edits that do not touch skill frontmatter | none (no release cut) | `docs:` | `docs` |
+| `release/vX.Y.Z` | Release PRs (opened by Auto release; you normally don't create these by hand) | — | `release:` | `release` |
 
 Rules:
 
@@ -58,8 +68,8 @@ Rules:
 1. `git checkout -b feat/<kebab-case-name>`
 2. `make new-skill name=<kebab-case-name>`
 3. Replace the placeholder `description` in `SKILL.md` with a specific,
-   trigger-rich one. See
-   [skills/repo-skill-maintainer/references/description-rules.md](skills/repo-skill-maintainer/references/description-rules.md).
+   trigger-rich one — it should name concrete phrases the user would say
+   when they want this skill, not a generic summary.
 4. Write the body: **When to use / When NOT to use / Workflow / References**.
 5. Put long-form background in `references/`, reusable files in `assets/`,
    and deterministic helpers in `scripts/`.
@@ -98,5 +108,11 @@ caught by CI on the first push.
 
 ## Releasing
 
-Releases are a maintainer responsibility. See [`RELEASING.md`](RELEASING.md)
-for the flow — it is built around a `release/vX.Y.Z` branch PR.
+As a contributor, you don't need to do anything special — the
+[Auto release](.github/workflows/auto-release.yml) workflow opens the
+`release: vX.Y.Z` PR and pushes the tag after a maintainer approves it.
+Branch prefix drives the bump (see the taxonomy above).
+
+If you're a maintainer and need to cut a release by hand (major bump,
+off-schedule patch, recovering from a broken automation run), see
+[`RELEASING.md`](RELEASING.md) for the manual flow.

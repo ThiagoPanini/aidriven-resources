@@ -15,10 +15,9 @@ This repository is a **catalog of agent skills**, not an application. If you are
 
 1. **Never hand-edit `manifest.json`.** It is generated. Edit `SKILL.md` frontmatter and run `make sync`.
 2. **Never hand-edit `skills-lock.json`.** It is managed by a skill-registry tool; the `computedHash` will be wrong if you touch it by hand.
-3. **Before adding or modifying a skill, prefer the [`repo-skill-maintainer`](skills/repo-skill-maintainer/) skill.** It encodes the validator rules, description conventions, and release flow.
-4. **Scaffold new skills with `make new-skill name=<kebab-case>`**, not by hand-copying folders.
-5. **Run the preflight before claiming done**: `make validate` (structure, frontmatter, manifest sync). For release prep, `make release-check`.
-6. **Markdown and YAML must lint clean**: `make lint` (requires `markdownlint-cli` and `yamllint`).
+3. **Scaffold new skills with `make new-skill name=<kebab-case>`**, not by hand-copying folders.
+4. **Run the preflight before claiming done**: `make validate` (structure, frontmatter, manifest sync). For release prep, `make release-check`.
+5. **Markdown and YAML must lint clean**: `make lint` (requires `markdownlint-cli` and `yamllint`).
 
 ## Common workflows
 
@@ -53,4 +52,4 @@ External skills that fit the maintainer workflow (install via your skill-registr
 ## What this repo is *not*
 
 - Not a place for application code, tests beyond skill-level fixtures, or product features.
-- Not a dumping ground — every skill earns its place via the validator rules in [skills/repo-skill-maintainer/SKILL.md](skills/repo-skill-maintainer/SKILL.md).
+- Not a dumping ground — every skill earns its place via the validator rules in [`scripts/validate_repo.py`](scripts/validate_repo.py).
