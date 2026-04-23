@@ -2,6 +2,7 @@
 # .claude/
 # .copilot/
 # .agents/
+.ai-dev-setup
 
 # Local skill-registry lockfile (tool-generated, not part of the distributable catalog)
 skills-lock.json

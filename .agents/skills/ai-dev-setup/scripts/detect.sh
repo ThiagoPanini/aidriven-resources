@@ -62,18 +62,6 @@ skill_registry="none"
 exists skills-lock.json       && skill_registry="skills-lock.json"
 exists skills.lock.yaml       && skill_registry="skills.lock.yaml"
 
-# find-skills (Vercel skills.sh discovery helper) — prerequisite for Phase 3
-find_skills=false
-for d in .claude/skills/find-skills .agents/skills/find-skills "$HOME/.claude/skills/find-skills"; do
-  [[ -e "$d" ]] && { find_skills=true; break; }
-done
-# `npx skills` CLI (the command find-skills wraps) is an acceptable substitute
-skills_cli=false
-if has_cmd npx; then
-  # probe without triggering a network install
-  npx --no-install skills --help >/dev/null 2>&1 && skills_cli=true
-fi
-
 # --- MCP ---
 mcp_configs=()
 exists .mcp.json         && mcp_configs+=(".mcp.json")
@@ -167,9 +155,7 @@ cat <<EOF
     "codex": $codex,
     "cursor": $cursor,
     "skills_dirs": $(json_array "${skills_dirs[@]:-}"),
-    "skill_registry": "$skill_registry",
-    "find_skills": $find_skills,
-    "skills_cli": $skills_cli
+    "skill_registry": "$skill_registry"
   },
   "mcp": {
     "configs": $(json_array "${mcp_configs[@]:-}"),

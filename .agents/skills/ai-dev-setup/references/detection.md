@@ -31,7 +31,6 @@ Each signal maps to a downstream decision. The point of detection isn't to be ex
 | `.agents/skills/` | Shared skills directory (e.g. managed by a skill registry) |
 | `prompts/` or `.prompts/` | Versioned prompt library |
 | `skills-lock.json`, `skills.lock.yaml` | A skill-registry tool is managing installs — **do not hand-install** into the managed dir; use the registry's CLI or tell the user |
-| `find-skills` skill (project or `~/.claude/skills/`) or `npx skills --help` works | Discovery prerequisite for Phase 3 is satisfied. If neither is present, propose installing `find-skills` (Vercel/`skills.sh`) before searching |
 
 ### 3. MCP configuration
 
@@ -77,7 +76,7 @@ For each config, inventory servers present (`serena`, `github`, `mintlify`, ...)
 - Branch name (are we on a feature branch or main?)
 - Clean vs. dirty (warn on dirty; offer to stash or branch before writes)
 - Remote (github.com vs. self-hosted; informs which GitHub MCP to suggest)
-- `.gitignore` contents (avoid committing local configs, `.ai-dev-setup/changelog.md`)
+- `.gitignore` contents (avoid committing backups, local configs)
 
 ## How to interpret the signals
 
@@ -131,7 +130,7 @@ Whether from script or checklist, normalize into this JSON shape (so the rest of
 ```json
 {
   "project": {"type": "python|node|rust|mixed|unknown", "langs": [...], "pkg_mgr": "uv|npm|...", "maturity": "greenfield|early|mature"},
-  "ai_artifacts": {"claude_md": true, "agents_md": true, "copilot": false, "codex": false, "cursor": false, "skills_dirs": [".claude/skills", ".agents/skills"], "skill_registry": "skills-lock.json", "find_skills": true, "skills_cli": true},
+  "ai_artifacts": {"claude_md": true, "agents_md": true, "copilot": false, "codex": false, "cursor": false, "skills_dirs": [".claude/skills", ".agents/skills"], "skill_registry": "skills-lock.json"},
   "mcp": {"configs": [".mcp.json", ".vscode/mcp.json"], "servers": ["mintlify", "serena", "github"]},
   "token_opt": {"serena": true, "rtk": true, "caveman": false},
   "sdd": {"specify": true, "constitution": true},

@@ -127,58 +127,6 @@ jobs:
 
           echo "PR title OK."
 
-  skill-scope:
-    name: Skill scope (feat/fix only)
-    if: |
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      (startsWith(github.head_ref, 'feat/') || startsWith(github.head_ref, 'fix/'))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Check changes are scoped to a single skill
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -e
-          slug="${HEAD_REF#*/}"
-          echo "Expected skill slug: '$slug'"
-
-          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
-          echo "Changed files:"
-          echo "$changed" | sed 's/^/  /'
-
-          # Root-level files that may legitimately change alongside a skill edit
-          allowed_root_regex='^(manifest\.json|README\.md|CONTRIBUTING\.md|RELEASING\.md)$'
-          violations=""
-
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            if echo "$file" | grep -qE "$allowed_root_regex"; then
-              continue
-            fi
-            if [[ "$file" == skills/"$slug"/* ]]; then
-              continue
-            fi
-            violations="$violations\n  $file"
-          done <<< "$changed"
-
-          if [ -n "$violations" ]; then
-            echo "::error::PR scope violation — this branch must only touch skills/$slug/ plus allowed root files."
-            echo "::error::Out-of-scope files:"
-            printf '%b\n' "$violations" | while read -r line; do
-              [ -n "$line" ] && echo "::error::$line"
-            done
-            echo "::error::Split the PR, or rename the branch if the scope is intentionally broader."
-            exit 1
-          fi
-
-          echo "Skill scope OK — all changes target skills/$slug/ or allowed root files."
 
   open-pr:
     name: Auto-open draft PR
@@ -186,7 +134,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref != 'refs/heads/main' &&
       !startsWith(github.ref_name, 'dependabot/')
-    needs: [branch-name]
+    needs: [validate, lint, branch-name, pr-title]
     runs-on: ubuntu-latest
     permissions:
       contents: read

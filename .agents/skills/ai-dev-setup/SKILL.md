@@ -46,7 +46,7 @@ Before recommending anything, understand what's already here. Read — don't wri
 Run `scripts/detect.sh` from the skill directory. It emits a JSON profile describing:
 - project type, languages, package managers, test/build tools
 - existing agent context files (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursorrules`, etc.)
-- existing skills directories (`.claude/skills/`, `.agents/skills/`), skill-lock files, and whether `find-skills` / the `npx skills` CLI is available (required prerequisite for skill discovery in Phase 3)
+- existing skills directories (`.claude/skills/`, `.agents/skills/`), skill-lock files
 - existing MCP configs (`.mcp.json`, `.vscode/mcp.json`, `~/.codex/config.toml` if readable)
 - token-optimization tooling signals (Serena config at `.serena/`, RTK in PATH, Caveman, etc.)
 - SDD signals (`.specify/`, spec/plan/task files)
@@ -121,12 +121,12 @@ Batch related decisions but cap at ~5 at a time — cognitive load matters. For 
 
 Only after explicit approval. Follow [references/install-playbook.md](references/install-playbook.md). Hard rules:
 
-1. **Rely on git for reversibility.** Warn if the tree is dirty; offer to stash or create a dedicated branch before writing. Each logical change should land on its own commit so it can be reverted cleanly.
+1. **Back up first.** `scripts/backup.sh` snapshots touched files into a tarball under `.ai-dev-setup/backups/<timestamp>/`. Run it before any write.
 2. **Idempotent writes.** Prefer merging into existing files (e.g. appending an MCP server to `.mcp.json`) over full rewrites. If you must rewrite, diff-preview first.
 3. **No silent overwrites.** If a target file exists and your change isn't purely additive, show the diff and ask.
-4. **Log the change.** Append an entry to `.ai-dev-setup/changelog.md` with what, why, and the commit reference.
+4. **Log the change.** Append an entry to `.ai-dev-setup/changelog.md` with what, why, which backup.
 5. **Validate.** Run `scripts/validate.sh` (or the category-specific validator). For MCP: attempt the listed tools work. For skills: the skill shows up in the expected location. For Serena: the hook fires.
-6. **Surface rollback.** Point to `git restore` / `git revert` for the specific files or commit.
+6. **Surface rollback.** Tell the user the exact command to undo (`tar -xf <backup> -C /`).
 
 **Exit condition:** validation passes, or you've surfaced a real failure with a clear next step. Never report success without running the validator.
 
@@ -134,22 +134,22 @@ Only after explicit approval. Follow [references/install-playbook.md](references
 
 One concise report at the end:
 
-- What was installed/changed (file-by-file, with the commit reference).
+- What was installed/changed (file-by-file, with backup locations).
 - What was deliberately *not* installed, and why (so the user can revisit later).
 - Suggested next steps (e.g. "run `rtk gh auth login` once before using the GitHub MCP").
-- How to roll back (via `git restore` / `git revert`).
+- How to roll back.
 
 ## Skill discovery
 
 Any time the in-scope work includes *installing reusable skills*, you MUST perform active skill discovery before recommending anything. Read and follow [references/skill-discovery.md](references/skill-discovery.md). Summary:
 
-1. **Prerequisite: `find-skills` (Vercel/`skills.sh`).** Treat it as required before broadening the search. Detection reports its presence; if missing, propose installing it (or the `npx skills` CLI it wraps) and pause for approval. Only fall back to raw `skills.sh` browsing when the user declines.
-2. Derive search terms from the detection profile — languages, frameworks, test/build tools, agent targets, detected gaps — not from a fixed list of example skills. Do not anchor on any single well-known skill (e.g. Serena) unless it actually fits a detected need.
-3. Query `find-skills` with each derived term, collect results across categories, then filter against the detection inventory (skip anything already installed, flag overlap).
-4. Curate — do not dump — shortlisted candidates. At most 3 per category.
+1. Check if `find-skills` is installed locally. If yes, use it.
+2. Otherwise, consult **skills.sh** (https://skills.sh/) as a web source.
+3. Offer to install `find-skills` as a durable helper if the user will likely do this again.
+4. Curate — do not dump — shortlisted candidates. Flag overlap with installed skills (read the detection inventory).
 5. Get explicit approval per-skill before install.
 
-Do not invent skill names. If you can't confirm a skill exists via `find-skills` or on skills.sh, say so rather than guessing.
+Do not invent skill names. If you can't confirm a skill exists on skills.sh or in a known index, say so rather than guessing.
 
 ## Safety constraints
 
@@ -182,6 +182,7 @@ Do not invent skill names. If you can't confirm a skill exists via `find-skills`
 | Script | Purpose |
 |--------|---------|
 | `scripts/detect.sh` | Emit repo profile JSON to stdout |
+| `scripts/backup.sh <file>...` | Snapshot files before modification |
 | `scripts/validate.sh [category]` | Post-install validation |
 
 All scripts assume POSIX shell, `jq`, and `rg`. They degrade gracefully if a tool is missing (print a clear message; don't crash the skill flow).

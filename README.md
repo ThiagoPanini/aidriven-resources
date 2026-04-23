@@ -14,13 +14,13 @@ scripts.
 
 Use it as a source of ready-made skills, or as a reference for building your own skill catalog.
 
-**Contents:** [Skill catalog](#skill-catalog) · [Quick start](#quick-start) · [Skill anatomy](#skill-anatomy) · [Repository layout](#repository-layout) · [Operating model](#operating-model) · [Maintainer workflow](#maintainer-workflow)
+**Contents:** [Skill catalog](#skill-catalog) · [Quick start](#quick-start) · [AI Setup](#ai-setup) · [Skill anatomy](#skill-anatomy) · [Repository layout](#repository-layout) · [Operating model](#operating-model) · [Maintainer workflow](#maintainer-workflow)
 
 ## Skill catalog
 
 | Skill | Use it for | Includes |
 |---|---|---|
-| [`ai-dev-setup`](skills/ai-dev-setup/) | Auditing, bootstrapping, and optimizing repositories for AI-assisted development. | Detection, backup, validation scripts; templates for agent files; references for MCP, SDD, token optimization, and agent IDE setup. |
+| [`ai-dev-setup`](skills/ai-dev-setup/) | Auditing, bootstrapping, and optimizing repositories for AI-assisted development. | Detection and validation scripts; templates for agent files; references for MCP, SDD, token optimization, and agent IDE setup. |
 | [`github-actions-workflow-setup`](skills/github-actions-workflow-setup/) | Creating, updating, or modernizing GitHub Actions workflows. | Action catalog, workflow patterns, and stack-specific CI/CD recipes for Python, Node.js, Go, Rust, Docker, and publishing flows. |
 | [`python-unit-tests`](skills/python-unit-tests/) | Generating pytest unit tests with clear Given/When/Then structure. | Test planning guidance, fixture and mocking rules, parameterization patterns, and edge-case coverage strategy. |
 | [`repo-skill-maintainer`](skills/repo-skill-maintainer/) | *Internal.* Maintaining this catalog itself — adding skills, fixing validator failures, preparing releases. | Validator rules, description guidelines, release checklist. |
@@ -59,6 +59,21 @@ Use the python-unit-tests skill to add pytest coverage for src/orders.py.
 
 > [!TIP]
 > The `description` field in each `SKILL.md` is what helps an assistant decide when to activate a skill automatically. Keep it specific, action-oriented, and full of realistic trigger phrases.
+
+## AI Setup
+
+The repository is configured for AI-assisted maintenance so skills can be authored, validated, and released with minimal friction. Each component is scoped to the workflow it serves:
+
+- [`AGENTS.md`](AGENTS.md) — single source of truth for agent-agnostic rules (Claude Code, Codex, Cursor, Copilot). Keeps catalog conventions in one place instead of duplicating them per tool.
+- [`CLAUDE.md`](CLAUDE.md) — thin Claude Code entry point that imports `AGENTS.md`, so rule updates propagate without drift.
+- [`.agents/skills/`](.agents/skills/) — canonical install location for maintainer-facing skills used *by* this repo (`ai-dev-setup`, `repo-skill-maintainer`, `find-skills`, `skill-creator`, `create-readme`).
+- [`.claude/skills/`](.claude/skills/) — symlinks into `.agents/skills/` so Claude Code discovers the same skills without duplication.
+- [`skills-lock.json`](skills-lock.json) — pins external skills consumed from other repos (`vercel-labs/skills`, `anthropics/skills`, `github/awesome-copilot`) so installs are reproducible and drift is detectable.
+- [`find-skills`](https://skills.sh/) (prerequisite) — discovery helper for `skills.sh`. The `ai-dev-setup` skill requires it before recommending new skills; install it first if it's missing.
+- [`scripts/`](scripts/) + [`Makefile`](Makefile) — deterministic validators, manifest sync, and scaffolder. Agents can run `make validate` / `make sync` to verify their work instead of guessing.
+- [`manifest.json`](manifest.json) — derived catalog index regenerated from each `SKILL.md` frontmatter, keeping agents and humans reading from the same source of truth.
+
+Together these components keep agent context small, rules consistent across tools, and catalog changes reviewable.
 
 ## Skill anatomy
 

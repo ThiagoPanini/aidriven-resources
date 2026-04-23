@@ -66,7 +66,7 @@ One report at the end, structured like this:
 ```
 ## Installed
 
-- <file>: <what changed> (commit <sha> or "uncommitted")
+- <file>: <what changed>, backup at <path>
 - <file>: ...
 
 ## Deferred (explicitly, with reason)
@@ -80,8 +80,7 @@ One report at the end, structured like this:
 
 ## Rollback
 
-If uncommitted: `git restore --staged --worktree .` (and `git clean -fd` for new files).
-If committed: `git revert <sha>`.
+To undo everything from this run: `tar -xf .ai-dev-setup/backups/<ts>/restore.tar -C /`
 Changelog: `.ai-dev-setup/changelog.md`
 ```
 
