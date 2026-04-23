@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 64" role="img" aria-label="aidriven-resources">
+  <rect x="8" y="8" width="48" height="48" rx="8" fill="none" stroke="#26251e" stroke-width="4"/>
+  <rect x="32" y="32" width="16" height="16" rx="2" fill="#f54e00"/>
+  <text x="80" y="42"
+        font-family="CursorGothic, 'Helvetica Neue', Arial, sans-serif"
+        font-size="26" font-weight="400"
+        letter-spacing="-0.325" fill="#26251e">aidriven-</text>
+  <text x="225" y="42"
+        font-family="jjannon, 'Iowan Old Style', Georgia, serif"
+        font-size="26" font-weight="400" font-style="italic"
+        fill="#26251e">resources</text>
+</svg>
